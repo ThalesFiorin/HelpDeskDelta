@@ -1,12 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Tenta pegar as variáveis usando o padrão moderno (Vite)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Verificação de segurança: Se não achar as chaves, avisa no console
-if (!supabaseUrl || !supabaseKey) {
-  console.error('ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas!');
-}
+// Substitua pelos valores do seu projeto Supabase
+// Em produção, use process.env.REACT_APP_SUPABASE_URL etc.
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://sua-url-do-projeto.supabase.co';
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'sua-chave-anonima-publica';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);

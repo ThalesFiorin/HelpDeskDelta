@@ -19,17 +19,18 @@ const App: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  // Check active session on load
+  // 1. Check for active Supabase session on application load
   useEffect(() => {
     const checkSession = async () => {
         try {
             const user = await api.getCurrentUser();
             if (user) {
+                console.log("Sessão recuperada:", user.email);
                 setCurrentUser(user);
                 setCurrentView('DASHBOARD');
             }
         } catch (e) {
-            console.error("Session check failed", e);
+            console.error("Erro ao verificar sessão:", e);
         } finally {
             setLoading(false);
         }
@@ -37,7 +38,7 @@ const App: React.FC = () => {
     checkSession();
   }, []);
 
-  // Load Initial Data when user is logged in
+  // 2. Load Real Data from Supabase when user is authenticated
   useEffect(() => {
     if (currentUser) {
       loadData();
@@ -53,11 +54,14 @@ const App: React.FC = () => {
         setTickets(fetchedTickets);
         setUsers(fetchedUsers);
     } catch (e) {
-        console.error("Failed to load data", e);
+        console.error("Falha ao carregar dados do Supabase:", e);
     }
   };
 
+  // --- Handlers ---
+
   const handleLogin = async (email: string, password: string) => {
+    // Uses api.ts which calls supabase.auth.signInWithPassword
     const user = await api.login(email, password);
     setCurrentUser(user);
     setCurrentView('DASHBOARD');
@@ -68,27 +72,21 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setCurrentView('LOGIN');
     setSelectedTicket(null);
+    setTickets([]); // Clear sensitive data on logout
   };
 
   const handleCreateTicket = async (ticketData: any) => {
     await api.createTicket(ticketData);
-    await loadData();
+    await loadData(); // Refresh list
     setCurrentView('TICKETS');
   };
 
   const handleAddComment = async (ticketId: string, content: string, isInternal: boolean) => {
-    // We need to use the real UUID (ticket.realId or ticket.id depending on how we mapped it)
-    // The api.getTickets maps id to TK-XXX, so we need to find the real ID from the tickets array or modify types
-    // For now, let's assume ticketId passed here is the ID we have in the state. 
-    // If the state ID is TK-XXX, we can't use it for DB updates. 
-    // FIX: Retrieve the real UUID from the current tickets list based on the ID passed
+    // Helper to find the database UUID (realId) if mapped, otherwise use the ID
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) return;
-
-    // Use ticket.realId if we added it to the type (we did in the api mapper, but not TS interface)
-    // To satisfy TS without changing types too much, cast or rely on api handling.
-    // In api.ts we mapped `realId`. We need to use it.
-    // Let's fallback to ticketId if realId missing (backwards compatibility attempt)
+    
+    // Fallback logic for ID handling
     const dbId = (ticket as any).realId || ticketId;
 
     await api.addComment(dbId, {
@@ -99,9 +97,9 @@ const App: React.FC = () => {
     
     await loadData();
     
-    // Refresh selected ticket
+    // Refresh the currently selected ticket view
     const updatedTickets = await api.getTickets();
-    const updatedSelection = updatedTickets.find(t => t.id === ticketId); // match by friendly ID
+    const updatedSelection = updatedTickets.find(t => t.id === ticketId);
     if (updatedSelection) setSelectedTicket(updatedSelection);
   };
 
@@ -139,6 +137,7 @@ const App: React.FC = () => {
   const handleUpdateUser = async (user: User) => {
       await api.updateUser(user);
       await loadData();
+      // Update local session if self-update
       if (currentUser?.id === user.id) {
           setCurrentUser(user);
       }
@@ -149,15 +148,22 @@ const App: React.FC = () => {
       await loadData();
   };
 
+  // --- Render ---
+
   if (loading) {
-      return <div className="min-h-screen flex items-center justify-center bg-gray-100">Carregando...</div>;
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+          <div className="w-8 h-8 border-4 border-delta-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500 font-medium">Conectando ao banco de dados...</p>
+        </div>
+      );
   }
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
   }
 
-  // View Routing Logic
+  // View Routing
   let content;
   
   if (selectedTicket) {
@@ -205,7 +211,11 @@ const App: React.FC = () => {
                 onDeleteUser={handleDeleteUser} 
               />;
           } else {
-              content = <div className="text-center p-10">Acesso negado.</div>;
+              content = (
+                <div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
+                  <p>Você não tem permissão para acessar este módulo.</p>
+                </div>
+              );
           }
           break;
         default:
