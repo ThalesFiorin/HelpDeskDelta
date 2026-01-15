@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Help Desk Delta</title>
     
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f9fafb" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -14,44 +14,24 @@
     <link rel="icon" type="image/png" href="https://qcnlchmkevpfcfxzklbd.supabase.co/storage/v1/object/public/LogoDeltaDomus/Icon-512.png" />
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class', 
-        theme: {
-          extend: {
-            colors: {
-              delta: {
-                yellow: '#F8AB1B',
-                blue: '#426FA6',
-                dark: '#4D4D4D',
-              }
-            }
-          }
-        }
-      };
-    </script>
+    
     <style>
-      /* --- FORÇAR MODO CLARO TOTAL --- */
+      /* --- FORÇAR MODO CLARO E CORES ORIGINAIS --- */
       :root {
         color-scheme: light !important;
       }
       html, body {
-        background-color: #ffffff !important; /* BRANCO PURO */
+        background-color: #f9fafb !important; /* Cor exata do bg-gray-50 */
         color: #4D4D4D !important;
       }
-      /* Inputs brancos */
+      /* Prevenção para garantir que campos de digitação não fiquem pretos */
       input, textarea, select {
         background-color: #ffffff !important;
         color: #000000 !important;
-        border-color: #e5e7eb;
+        border: 1px solid #e5e7eb;
       }
-
-      /* Scrollbar */
-      ::-webkit-scrollbar { width: 8px; height: 8px; }
-      ::-webkit-scrollbar-track { background: #f1f1f1; }
-      ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-      ::-webkit-scrollbar-thumb:hover { background: #426FA6; }
     </style>
+    
   <script type="importmap">
 {
   "imports": {
@@ -67,7 +47,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-white text-[#4D4D4D] antialiased">
+  <body class="bg-gray-50 text-[#4D4D4D] antialiased">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
