@@ -15,7 +15,8 @@ export default async function handler(request, response) {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: 'Delta Help Desk <onboarding@resend.dev>',
+        // AQUI: Usando o domínio oficial (ficará pausado até o DNS aprovar)
+        from: 'Help Desk Delta <nao-responda@deltadomusadm.com.br>',
         to: [to],
         subject: subject,
         html: html
