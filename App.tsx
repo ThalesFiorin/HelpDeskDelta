@@ -7,18 +7,37 @@ import { TicketDetail } from './components/TicketDetail';
 import { UserManagement } from './components/UserManagement';
 import { CalendarView } from './components/CalendarView';
 import { Ticket, User, ViewState, UserRole, TicketStatus } from './types';
-import { mockService } from './services/mockService';
+import { api } from './services/api';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [loading, setLoading] = useState(true);
   
   // Data State
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  // Load Initial Data
+  // Check active session on load
+  useEffect(() => {
+    const checkSession = async () => {
+        try {
+            const user = await api.getCurrentUser();
+            if (user) {
+                setCurrentUser(user);
+                setCurrentView('DASHBOARD');
+            }
+        } catch (e) {
+            console.error("Session check failed", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    checkSession();
+  }, []);
+
+  // Load Initial Data when user is logged in
   useEffect(() => {
     if (currentUser) {
       loadData();
@@ -26,81 +45,113 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   const loadData = async () => {
-    const [fetchedTickets, fetchedUsers] = await Promise.all([
-      mockService.getTickets(),
-      mockService.getUsers()
-    ]);
-    setTickets(fetchedTickets);
-    setUsers(fetchedUsers);
+    try {
+        const [fetchedTickets, fetchedUsers] = await Promise.all([
+          api.getTickets(),
+          api.getUsers()
+        ]);
+        setTickets(fetchedTickets);
+        setUsers(fetchedUsers);
+    } catch (e) {
+        console.error("Failed to load data", e);
+    }
   };
 
-  const handleLogin = async (email: string) => {
-    const user = await mockService.login(email);
+  const handleLogin = async (email: string, password: string) => {
+    const user = await api.login(email, password);
     setCurrentUser(user);
     setCurrentView('DASHBOARD');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await api.signOut();
     setCurrentUser(null);
     setCurrentView('LOGIN');
     setSelectedTicket(null);
   };
 
   const handleCreateTicket = async (ticketData: any) => {
-    await mockService.createTicket(ticketData);
+    await api.createTicket(ticketData);
     await loadData();
     setCurrentView('TICKETS');
   };
 
   const handleAddComment = async (ticketId: string, content: string, isInternal: boolean) => {
-    await mockService.addComment(ticketId, {
+    // We need to use the real UUID (ticket.realId or ticket.id depending on how we mapped it)
+    // The api.getTickets maps id to TK-XXX, so we need to find the real ID from the tickets array or modify types
+    // For now, let's assume ticketId passed here is the ID we have in the state. 
+    // If the state ID is TK-XXX, we can't use it for DB updates. 
+    // FIX: Retrieve the real UUID from the current tickets list based on the ID passed
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    // Use ticket.realId if we added it to the type (we did in the api mapper, but not TS interface)
+    // To satisfy TS without changing types too much, cast or rely on api handling.
+    // In api.ts we mapped `realId`. We need to use it.
+    // Let's fallback to ticketId if realId missing (backwards compatibility attempt)
+    const dbId = (ticket as any).realId || ticketId;
+
+    await api.addComment(dbId, {
       userId: currentUser!.id,
-      userName: currentUser!.name,
       content,
       isInternal
     });
-    // Refresh local ticket state immediately for UI response
-    const updated = await mockService.getTickets();
-    setTickets(updated);
-    // Update selected ticket view
-    const specific = updated.find(t => t.id === ticketId);
-    if (specific) setSelectedTicket(specific);
+    
+    await loadData();
+    
+    // Refresh selected ticket
+    const updatedTickets = await api.getTickets();
+    const updatedSelection = updatedTickets.find(t => t.id === ticketId); // match by friendly ID
+    if (updatedSelection) setSelectedTicket(updatedSelection);
   };
 
   const handleUpdateStatus = async (ticketId: string, status: TicketStatus) => {
-    await mockService.updateTicketStatus(ticketId, status);
-    const updated = await mockService.getTickets();
-    setTickets(updated);
-    const specific = updated.find(t => t.id === ticketId);
-    if (specific) setSelectedTicket(specific);
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+    const dbId = (ticket as any).realId || ticketId;
+
+    await api.updateTicketStatus(dbId, status);
+    await loadData();
+    
+    const updatedTickets = await api.getTickets();
+    const updatedSelection = updatedTickets.find(t => t.id === ticketId);
+    if (updatedSelection) setSelectedTicket(updatedSelection);
   };
 
   const handleAssign = async (ticketId: string, userId: string) => {
-    await mockService.assignTicket(ticketId, userId);
-    const updated = await mockService.getTickets();
-    setTickets(updated);
-    const specific = updated.find(t => t.id === ticketId);
-    if (specific) setSelectedTicket(specific);
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+    const dbId = (ticket as any).realId || ticketId;
+
+    await api.assignTicket(dbId, userId);
+    await loadData();
+    
+    const updatedTickets = await api.getTickets();
+    const updatedSelection = updatedTickets.find(t => t.id === ticketId);
+    if (updatedSelection) setSelectedTicket(updatedSelection);
   };
 
   const handleAddUser = async (user: User) => {
-      await mockService.addUser(user);
+      await api.addUser(user);
       await loadData();
   };
 
   const handleUpdateUser = async (user: User) => {
-      await mockService.updateUser(user);
+      await api.updateUser(user);
       await loadData();
-      // Update current user if self-editing
       if (currentUser?.id === user.id) {
           setCurrentUser(user);
       }
   };
 
   const handleDeleteUser = async (id: string) => {
-      await mockService.deleteUser(id);
+      await api.deleteUser(id);
       await loadData();
   };
+
+  if (loading) {
+      return <div className="min-h-screen flex items-center justify-center bg-gray-100">Carregando...</div>;
+  }
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
