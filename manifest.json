@@ -1,6 +1,6 @@
 {
-  "name": "Delta Help Desk",
-  "short_name": "DeltaDesk",
+  "name": "Help Desk Delta",
+  "short_name": "HelpDesk",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
