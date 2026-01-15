@@ -1,0 +1,15 @@
+{
+  "name": "Delta Help Desk",
+  "short_name": "DeltaDesk",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://qcnlchmkevpfcfxzklbd.supabase.co/storage/v1/object/public/LogoDeltaDomus/Icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
