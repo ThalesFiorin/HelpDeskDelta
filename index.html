@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Help Desk Delta</title>
     
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <link rel="manifest" href="/manifest.json" />
     
     <link rel="icon" type="image/png" href="https://qcnlchmkevpfcfxzklbd.supabase.co/storage/v1/object/public/LogoDeltaDomus/Icon-512.png" />
@@ -12,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class', /* TRAVA O MODO CLARO NO TAILWIND */
+        darkMode: 'class', 
         theme: {
           extend: {
             colors: {
@@ -27,35 +31,26 @@
       };
     </script>
     <style>
-      /* --- FORÇAR MODO CLARO (LIGHT MODE) --- */
+      /* --- FORÇAR MODO CLARO TOTAL --- */
       :root {
         color-scheme: light !important;
       }
       html, body {
-        background-color: #f9fafb !important; /* Força fundo claro */
-        color: #4D4D4D !important; /* Força texto escuro */
+        background-color: #ffffff !important; /* BRANCO PURO */
+        color: #4D4D4D !important;
       }
-      /* Garante que campos de texto não fiquem escuros no celular */
+      /* Inputs brancos */
       input, textarea, select {
         background-color: #ffffff !important;
         color: #000000 !important;
+        border-color: #e5e7eb;
       }
 
-      /* Barra de rolagem personalizada */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #ccc; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #426FA6; 
-      }
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #426FA6; }
     </style>
   <script type="importmap">
 {
@@ -72,7 +67,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 text-[#4D4D4D] antialiased">
+  <body class="bg-white text-[#4D4D4D] antialiased">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
