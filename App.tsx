@@ -15,17 +15,14 @@ const App: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Data State
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  // 1. Check for active Supabase session on application load
   useEffect(() => {
     const checkSession = async () => {
         try {
             const user = await api.getCurrentUser();
             if (user) {
-                console.log("Sessão recuperada:", user.email);
                 setCurrentUser(user);
                 setCurrentView('DASHBOARD');
             }
@@ -38,7 +35,6 @@ const App: React.FC = () => {
     checkSession();
   }, []);
 
-  // 2. Load Real Data from Supabase when user is authenticated
   useEffect(() => {
     if (currentUser) {
       loadData();
@@ -58,10 +54,7 @@ const App: React.FC = () => {
     }
   };
 
-  // --- Handlers ---
-
   const handleLogin = async (email: string, password: string) => {
-    // Uses api.ts which calls supabase.auth.signInWithPassword
     const user = await api.login(email, password);
     setCurrentUser(user);
     setCurrentView('DASHBOARD');
@@ -72,32 +65,21 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setCurrentView('LOGIN');
     setSelectedTicket(null);
-    setTickets([]); // Clear sensitive data on logout
+    setTickets([]);
   };
 
   const handleCreateTicket = async (ticketData: any) => {
     await api.createTicket(ticketData);
-    await loadData(); // Refresh list
+    await loadData();
     setCurrentView('TICKETS');
   };
 
   const handleAddComment = async (ticketId: string, content: string, isInternal: boolean) => {
-    // Helper to find the database UUID (realId) if mapped, otherwise use the ID
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) return;
-    
-    // Fallback logic for ID handling
     const dbId = (ticket as any).realId || ticketId;
-
-    await api.addComment(dbId, {
-      userId: currentUser!.id,
-      content,
-      isInternal
-    });
-    
+    await api.addComment(dbId, { userId: currentUser!.id, content, isInternal });
     await loadData();
-    
-    // Refresh the currently selected ticket view
     const updatedTickets = await api.getTickets();
     const updatedSelection = updatedTickets.find(t => t.id === ticketId);
     if (updatedSelection) setSelectedTicket(updatedSelection);
@@ -107,10 +89,8 @@ const App: React.FC = () => {
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) return;
     const dbId = (ticket as any).realId || ticketId;
-
     await api.updateTicketStatus(dbId, status);
     await loadData();
-    
     const updatedTickets = await api.getTickets();
     const updatedSelection = updatedTickets.find(t => t.id === ticketId);
     if (updatedSelection) setSelectedTicket(updatedSelection);
@@ -120,10 +100,8 @@ const App: React.FC = () => {
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) return;
     const dbId = (ticket as any).realId || ticketId;
-
     await api.assignTicket(dbId, userId);
     await loadData();
-    
     const updatedTickets = await api.getTickets();
     const updatedSelection = updatedTickets.find(t => t.id === ticketId);
     if (updatedSelection) setSelectedTicket(updatedSelection);
@@ -137,18 +115,13 @@ const App: React.FC = () => {
   const handleUpdateUser = async (user: User) => {
       await api.updateUser(user);
       await loadData();
-      // Update local session if self-update
-      if (currentUser?.id === user.id) {
-          setCurrentUser(user);
-      }
+      if (currentUser?.id === user.id) setCurrentUser(user);
   };
 
   const handleDeleteUser = async (id: string) => {
       await api.deleteUser(id);
       await loadData();
   };
-
-  // --- Render ---
 
   if (loading) {
       return (
@@ -163,9 +136,7 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
-  // View Routing
   let content;
-  
   if (selectedTicket) {
       content = (
           <TicketDetail 
@@ -184,12 +155,7 @@ const App: React.FC = () => {
           content = <Dashboard tickets={tickets} />;
           break;
         case 'CALENDAR':
-          content = (
-            <CalendarView 
-              tickets={tickets} 
-              onSelectTicket={setSelectedTicket}
-            />
-          );
+          content = <CalendarView tickets={tickets} onSelectTicket={setSelectedTicket} />;
           break;
         case 'TICKETS':
           content = (
