@@ -26,7 +26,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<TicketPriority>(TicketPriority.MEDIUM);
-  
+   
   // Selection State
   const [newAssigneeId, setNewAssigneeId] = useState('');
 
@@ -62,6 +62,7 @@ export const TicketList: React.FC<TicketListProps> = ({
     
     const assignee = users.find(u => u.id === newAssigneeId);
 
+    // 1. Cria o chamado no Banco
     await onCreateTicket({
       title: newTitle,
       description: newDesc,
@@ -73,6 +74,36 @@ export const TicketList: React.FC<TicketListProps> = ({
       assigneeId: assignee?.id,
       assigneeName: assignee?.name
     });
+
+    // 2. Tenta enviar o E-mail de notificação (Código Novo)
+    if (assignee && assignee.email) {
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: assignee.email,
+            subject: `[Novo Chamado] ${newTitle}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
+                <h2 style="color: #0F52BA;">Olá, ${assignee.name}!</h2>
+                <p>Um novo chamado foi atribuído a você por <strong>${currentUser.name}</strong>.</p>
+                <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #F4B400; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><strong>Assunto:</strong> ${newTitle}</p>
+                  <p style="margin: 5px 0;"><strong>Prioridade:</strong> ${newPriority}</p>
+                  <p style="margin: 5px 0;"><strong>Descrição:</strong><br/>${newDesc}</p>
+                </div>
+                <p>Acesse o <a href="https://deltadomus-helpdesk.vercel.app" style="color: #0F52BA; font-weight: bold;">Delta Help Desk</a> para responder.</p>
+              </div>
+            `
+          })
+        });
+        console.log('Notificação enviada por e-mail.');
+      } catch (err) {
+        console.error('Falha ao enviar notificação:', err);
+      }
+    }
+
     setIsModalOpen(false);
   };
 
