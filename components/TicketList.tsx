@@ -93,7 +93,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                   <p style="margin: 5px 0;"><strong>Prioridade:</strong> ${newPriority}</p>
                   <p style="margin: 5px 0;"><strong>Descrição:</strong><br/>${newDesc}</p>
                 </div>
-                <p>Acesse o <a href="https://deltadomus-helpdesk.vercel.app" style="color: #0F52BA; font-weight: bold;">Delta Help Desk</a> para responder.</p>
+                <p>Acesse o <a href="https://help-desk-delta-inky.vercel.app" style="color: #0F52BA; font-weight: bold;">Delta Help Desk</a> para responder.</p>
               </div>
             `
           })
