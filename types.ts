@@ -54,4 +54,5 @@ export interface Ticket {
   comments: Comment[];
 }
 
-export type ViewState = 'LOGIN' | 'DASHBOARD' | 'TICKETS' | 'USERS' | 'PROFILE' | 'CALENDAR';
+// ViewState atualizado para suportar a tela de redefinição de senha
+export type ViewState = 'LOGIN' | 'DASHBOARD' | 'TICKETS' | 'USERS' | 'PROFILE' | 'CALENDAR' | 'RESET_PASSWORD';
