@@ -20,32 +20,26 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      // Se houver token na URL, prioriza a tela de Reset Password
-      if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
-        setCurrentView('RESET_PASSWORD');
-      }
-    };
-
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-
     const checkSession = async () => {
         try {
+            // 1. Verifica se o link atual é de recuperação de senha
+            const hash = window.location.hash;
+            const isRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
+
+            // 2. Verifica se existe um usuário logado
             const user = await api.getCurrentUser();
+            
             if (user) {
                 setCurrentUser(user);
-                
-                const hash = window.location.hash;
-                // CORREÇÃO: Só vai para o Dashboard se NÃO for um link de recuperação
-                const isRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
-                
-                if (!isRecovery) {
-                  setCurrentView('DASHBOARD');
+                // Se for recuperação, PRIORIDADE para a tela de Reset
+                if (isRecovery) {
+                    setCurrentView('RESET_PASSWORD');
                 } else {
-                  setCurrentView('RESET_PASSWORD');
+                    setCurrentView('DASHBOARD');
                 }
+            } else if (isRecovery) {
+                // Mesmo sem usuário carregado, se o link é de reset, mostra a tela
+                setCurrentView('RESET_PASSWORD');
             }
         } catch (e) {
             console.error("Erro ao verificar sessão:", e);
@@ -53,12 +47,37 @@ const App: React.FC = () => {
             setLoading(false);
         }
     };
+    
     checkSession();
 
+    // Listener para mudanças na URL (caso o usuário clique no link com o app aberto)
+    const handleHashChange = () => {
+      if (window.location.hash.includes('type=recovery')) {
+        setCurrentView('RESET_PASSWORD');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // ... (o restante do código handleLogin, handleLogout, etc. permanece igual)
+  useEffect(() => {
+    if (currentUser && currentView !== 'RESET_PASSWORD' && currentView !== 'LOGIN') {
+      loadData();
+    }
+  }, [currentUser, currentView]);
+
+  const loadData = async () => {
+    try {
+        const [fetchedTickets, fetchedUsers] = await Promise.all([
+          api.getTickets(),
+          api.getUsers()
+        ]);
+        setTickets(fetchedTickets);
+        setUsers(fetchedUsers);
+    } catch (e) {
+        console.error("Falha ao carregar dados do Supabase:", e);
+    }
+  };
 
   const handleLogin = async (email: string, password: string) => {
     const user = await api.login(email, password);
@@ -142,25 +161,6 @@ const App: React.FC = () => {
       await loadData();
   };
 
-  useEffect(() => {
-    if (currentUser && currentView !== 'RESET_PASSWORD' && currentView !== 'LOGIN') {
-      loadData();
-    }
-  }, [currentUser, currentView]);
-
-  const loadData = async () => {
-    try {
-        const [fetchedTickets, fetchedUsers] = await Promise.all([
-          api.getTickets(),
-          api.getUsers()
-        ]);
-        setTickets(fetchedTickets);
-        setUsers(fetchedUsers);
-    } catch (e) {
-        console.error("Falha ao carregar dados do Supabase:", e);
-    }
-  };
-
   if (loading) {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -170,6 +170,7 @@ const App: React.FC = () => {
       );
   }
 
+  // Se a visão for Reset Password, ela ignora o currentUser e mostra a tela de troca
   if (currentView === 'RESET_PASSWORD') {
     return <ResetPassword onSuccess={() => setCurrentView('LOGIN')} />;
   }
