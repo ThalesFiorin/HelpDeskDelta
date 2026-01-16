@@ -50,6 +50,22 @@ export const api = {
     await supabase.auth.signOut();
   },
 
+  // --- NOVAS FUNÇÕES DE RECUPERAÇÃO DE SENHA ---
+  resetPassword: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // Redireciona para o seu novo domínio limpo na Vercel
+      redirectTo: 'https://help-desk-deltadomus.vercel.app/reset-password',
+    });
+    if (error) throw error;
+  },
+
+  updatePassword: async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    if (error) throw error;
+  },
+
   // --- USERS ---
   getUsers: async () => {
     const { data, error } = await supabase.from('users').select('*');
@@ -58,15 +74,12 @@ export const api = {
   },
 
   addUser: async (user: User) => {
-    // Note: In a real app, creating a user usually involves Supabase Auth Admin API
-    // Here we just insert into the public profile table for list management
     const { data, error } = await supabase.from('users').insert([{
       name: user.name,
       email: user.email,
       role: user.role,
       department: user.department,
       avatar: user.avatar
-      // Password is not stored here in production logic
     }]).select().single();
     
     if (error) throw error;
@@ -96,7 +109,6 @@ export const api = {
 
   // --- TICKETS ---
   getTickets: async () => {
-    // Fetch tickets with relations
     const { data, error } = await supabase
       .from('tickets')
       .select(`
@@ -115,10 +127,9 @@ export const api = {
 
     if (error) throw error;
 
-    // Transform DB snake_case to Frontend camelCase
     return data.map((t: any) => ({
-      id: t.friendly_id ? `TK-${t.friendly_id}` : t.id.substring(0, 8), // Use friendly_id if available
-      realId: t.id, // Keep UUID for operations
+      id: t.friendly_id ? `TK-${t.friendly_id}` : t.id.substring(0, 8),
+      realId: t.id,
       title: t.title,
       description: t.description,
       status: t.status,
@@ -153,26 +164,10 @@ export const api = {
     }]).select().single();
 
     if (error) throw error;
-    
-    // Simulate Email Notification (Console Log only as backend is required for real email)
-    if (ticket.assigneeId) {
-       console.log(`📧 [EMAIL] Para Responsável: Novo chamado atribuído.`);
-    } else {
-       console.log(`📧 [EMAIL] Para Admins: Novo chamado sem responsável.`);
-    }
-    
     return data;
   },
 
   updateTicketStatus: async (ticketId: string, status: TicketStatus) => {
-    // We need the UUID (realId) not the TK-123 friendly id
-    // However, for simplicity, assume we passed the full ticket object or handle mapping in UI
-    // Here we assume ticketId passed is the UUID or we need to look it up.
-    // In this refactor, I will ensure the UI passes the UUID (realId) or I strip the prefix if it's not a UUID.
-    
-    // Clean ID check (if it starts with TK-, we might need to query, but better to fix types)
-    // For now, let's assume the App passes the correct UUID stored in ticket.id or ticket.realId
-    
     const { error } = await supabase
       .from('tickets')
       .update({ status })
@@ -188,7 +183,6 @@ export const api = {
       .eq('id', ticketId);
 
     if (error) throw error;
-    console.log(`📧 [EMAIL] Chamado atribuído.`);
   },
 
   addComment: async (ticketId: string, comment: any) => {
