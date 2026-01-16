@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<void>;
+  onForgotPassword: (email: string) => Promise<void>; // Nova prop conectada ao App.tsx
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para lidar com o clique no link de esqueci senha
+  const handleForgotClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onForgotPassword(email);
   };
 
   return (
@@ -78,9 +85,20 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 >
                     {loading ? 'Autenticando...' : 'Entrar no Sistema'}
                 </button>
+
+                {/* Novo Link de Esqueci minha senha */}
+                <div className="text-center pt-2">
+                    <button 
+                        type="button"
+                        onClick={handleForgotClick}
+                        className="text-sm text-delta-blue hover:underline font-medium transition-colors"
+                    >
+                        Esqueci minha senha
+                    </button>
+                </div>
             </form>
             
-            <p className="text-center text-xs text-gray-400 mt-4">
+            <p className="text-center text-xs text-gray-400 mt-6">
                 Protegido por Supabase Auth
             </p>
         </div>
