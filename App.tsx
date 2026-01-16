@@ -6,7 +6,7 @@ import { TicketList } from './components/TicketList';
 import { TicketDetail } from './components/TicketDetail';
 import { UserManagement } from './components/UserManagement';
 import { CalendarView } from './components/CalendarView';
-import { ResetPassword } from './components/ResetPassword'; // Importando a nova página
+import { ResetPassword } from './components/ResetPassword';
 import { Ticket, User, ViewState, UserRole, TicketStatus } from './types';
 import { api } from './services/api';
 
@@ -20,15 +20,15 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // Detecta se o usuário veio pelo link de recuperação de senha
     const handleHashChange = () => {
       const hash = window.location.hash;
+      // Se houver token na URL, prioriza a tela de Reset Password
       if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
         setCurrentView('RESET_PASSWORD');
       }
     };
 
-    handleHashChange(); // Verifica ao carregar a página
+    handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
 
     const checkSession = async () => {
@@ -36,9 +36,15 @@ const App: React.FC = () => {
             const user = await api.getCurrentUser();
             if (user) {
                 setCurrentUser(user);
-                // Se estiver logado e não for reset de senha, vai pro dashboard
-                if (window.location.hash.indexOf('type=recovery') === -1) {
+                
+                const hash = window.location.hash;
+                // CORREÇÃO: Só vai para o Dashboard se NÃO for um link de recuperação
+                const isRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
+                
+                if (!isRecovery) {
                   setCurrentView('DASHBOARD');
+                } else {
+                  setCurrentView('RESET_PASSWORD');
                 }
             }
         } catch (e) {
@@ -52,24 +58,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  useEffect(() => {
-    if (currentUser && currentView !== 'RESET_PASSWORD') {
-      loadData();
-    }
-  }, [currentUser, currentView]);
-
-  const loadData = async () => {
-    try {
-        const [fetchedTickets, fetchedUsers] = await Promise.all([
-          api.getTickets(),
-          api.getUsers()
-        ]);
-        setTickets(fetchedTickets);
-        setUsers(fetchedUsers);
-    } catch (e) {
-        console.error("Falha ao carregar dados do Supabase:", e);
-    }
-  };
+  // ... (o restante do código handleLogin, handleLogout, etc. permanece igual)
 
   const handleLogin = async (email: string, password: string) => {
     const user = await api.login(email, password);
@@ -153,6 +142,25 @@ const App: React.FC = () => {
       await loadData();
   };
 
+  useEffect(() => {
+    if (currentUser && currentView !== 'RESET_PASSWORD' && currentView !== 'LOGIN') {
+      loadData();
+    }
+  }, [currentUser, currentView]);
+
+  const loadData = async () => {
+    try {
+        const [fetchedTickets, fetchedUsers] = await Promise.all([
+          api.getTickets(),
+          api.getUsers()
+        ]);
+        setTickets(fetchedTickets);
+        setUsers(fetchedUsers);
+    } catch (e) {
+        console.error("Falha ao carregar dados do Supabase:", e);
+    }
+  };
+
   if (loading) {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -162,7 +170,6 @@ const App: React.FC = () => {
       );
   }
 
-  // Lógica de exibição das telas de autenticação
   if (currentView === 'RESET_PASSWORD') {
     return <ResetPassword onSuccess={() => setCurrentView('LOGIN')} />;
   }
