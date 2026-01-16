@@ -60,6 +60,21 @@ const App: React.FC = () => {
     setCurrentView('DASHBOARD');
   };
 
+  // Nova função de recuperação de senha
+  const handleForgotPassword = async (email: string) => {
+    if (!email) {
+      alert("Por favor, digite seu e-mail no campo de login primeiro.");
+      return;
+    }
+    try {
+      // Esta função chama o Supabase para enviar o e-mail via Resend
+      await api.resetPassword(email); 
+      alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+    } catch (e: any) {
+      alert("Erro ao enviar e-mail: " + e.message);
+    }
+  };
+
   const handleLogout = async () => {
     await api.signOut();
     setCurrentUser(null);
@@ -132,8 +147,9 @@ const App: React.FC = () => {
       );
   }
 
+  // Passando a nova função handleForgotPassword para o componente de Login
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
+    return <Login onLogin={handleLogin} onForgotPassword={handleForgotPassword} />;
   }
 
   let content;
