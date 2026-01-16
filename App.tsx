@@ -6,12 +6,13 @@ import { TicketList } from './components/TicketList';
 import { TicketDetail } from './components/TicketDetail';
 import { UserManagement } from './components/UserManagement';
 import { CalendarView } from './components/CalendarView';
+import { ResetPassword } from './components/ResetPassword'; // Importando a nova página
 import { Ticket, User, ViewState, UserRole, TicketStatus } from './types';
 import { api } from './services/api';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
+  const [currentView, setCurrentView] = useState<ViewState | 'RESET_PASSWORD'>('LOGIN');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -19,12 +20,26 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
+    // Detecta se o usuário veio pelo link de recuperação de senha
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
+        setCurrentView('RESET_PASSWORD');
+      }
+    };
+
+    handleHashChange(); // Verifica ao carregar a página
+    window.addEventListener('hashchange', handleHashChange);
+
     const checkSession = async () => {
         try {
             const user = await api.getCurrentUser();
             if (user) {
                 setCurrentUser(user);
-                setCurrentView('DASHBOARD');
+                // Se estiver logado e não for reset de senha, vai pro dashboard
+                if (window.location.hash.indexOf('type=recovery') === -1) {
+                  setCurrentView('DASHBOARD');
+                }
             }
         } catch (e) {
             console.error("Erro ao verificar sessão:", e);
@@ -33,13 +48,15 @@ const App: React.FC = () => {
         }
     };
     checkSession();
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && currentView !== 'RESET_PASSWORD') {
       loadData();
     }
-  }, [currentUser]);
+  }, [currentUser, currentView]);
 
   const loadData = async () => {
     try {
@@ -60,14 +77,12 @@ const App: React.FC = () => {
     setCurrentView('DASHBOARD');
   };
 
-  // Nova função de recuperação de senha
   const handleForgotPassword = async (email: string) => {
     if (!email) {
       alert("Por favor, digite seu e-mail no campo de login primeiro.");
       return;
     }
     try {
-      // Esta função chama o Supabase para enviar o e-mail via Resend
       await api.resetPassword(email); 
       alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
     } catch (e: any) {
@@ -147,7 +162,11 @@ const App: React.FC = () => {
       );
   }
 
-  // Passando a nova função handleForgotPassword para o componente de Login
+  // Lógica de exibição das telas de autenticação
+  if (currentView === 'RESET_PASSWORD') {
+    return <ResetPassword onSuccess={() => setCurrentView('LOGIN')} />;
+  }
+
   if (!currentUser) {
     return <Login onLogin={handleLogin} onForgotPassword={handleForgotPassword} />;
   }
@@ -208,7 +227,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       user={currentUser} 
-      currentView={currentView} 
+      currentView={currentView as ViewState} 
       onNavigate={(view) => {
         setSelectedTicket(null);
         setCurrentView(view);
